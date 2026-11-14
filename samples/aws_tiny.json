@@ -1,0 +1,5 @@
+{"Records":[
+{"eventTime":"2025-03-11T03:05:12Z","eventName":"ConsoleLogin","userIdentity":{"userName":"test.user"},"sourceIPAddress":"203.0.113.45","responseElements":{"ConsoleLogin":"Success"}},
+{"eventTime":"2025-03-11T03:09:15Z","eventName":"GetObject","userIdentity":{"userName":"test.user"},"sourceIPAddress":"203.0.113.45","errorCode":"AccessDenied"},
+{"eventTime":"2025-03-11T02:58:40Z","eventName":"ConsoleLogin","userIdentity":{"userName":"test.user"},"sourceIPAddress":"203.0.113.45","responseElements":{"ConsoleLogin":"Failure"}}
+]}
