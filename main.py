@@ -5,6 +5,7 @@ import sys
 
 from fte.evidence import sha256_file
 from fte.readers import read_file
+from fte.report import build_report
 from fte.timeline import build_timeline
 from fte.summarize import analyze_all
 
@@ -21,10 +22,12 @@ def main():
         sys.exit(1)
 
     events = []
+    hashes = []
     for path in paths:
         digest = sha256_file(path)
         found = read_file(path)
         print(f"{path}: {len(found)} events, sha256 {digest[:16]}...")
+        hashes.append((path, digest))
         events.extend(found)
 
     timeline = build_timeline(events)
@@ -38,6 +41,7 @@ def main():
                              e.action, e.outcome, e.target, e.detail])
 
     print(f"\n{len(timeline)} events written to {out_name}")
+    results = None
 
     if use_ai:
         results = analyze_all(timeline)
@@ -51,6 +55,11 @@ def main():
         for r in results:
             if r["error"]:
                 print(f"AI chunk {r['first_id']} to {r['last_id']} failed: {r['error']}")
+
+    report_name = out_name.replace("timeline", "report", 1).replace(".csv", ".html")
+    with open(report_name, "w", encoding="utf-8") as f:
+        f.write(build_report("Cloud log investigation", timeline, hashes, results))
+    print(f"Report saved to {report_name}")
 
 if __name__ == "__main__":
     main()
