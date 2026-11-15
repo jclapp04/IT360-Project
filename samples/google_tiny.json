@@ -1,0 +1,4 @@
+{"items":[
+{"id":{"time":"2025-03-11T04:05:12.345Z","applicationName":"login"},"actor":{"email":"test.user@corp.example"},"ipAddress":"203.0.113.77","events":[{"name":"login_failure"},{"name":"login_success"}]},
+{"id":{"time":"2025-03-11T04:20:00Z","applicationName":"drive"},"actor":{"email":"test.user@corp.example"},"ipAddress":"203.0.113.77","events":[{"name":"download"}]}
+]}
