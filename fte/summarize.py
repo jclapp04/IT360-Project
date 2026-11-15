@@ -1,4 +1,5 @@
 import json
+import re
 from fte.ollama_client import ask_ollama
 
 SYSTEM = """You are a digital forensics assistant. An examiner gives you a cloud audit log events from AWS CloudTrail, Office 365, and Google Workspace, merged into one UTC timeline. Your job is to point out activity that looks suspicious so the examiner knows where to look first.
@@ -42,3 +43,27 @@ def analyze(events):
     if start == -1 or end == -1:
         raise ValueError("model did not return JSON: " + reply[:200])
     return json.loads(reply[start:end +1])
+
+
+
+IP_PATTERN = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b")
+
+def check_findings(result, events):
+    known = {e.event_id: e for e in events}
+    for f in result.get("findings", []):
+        problems = []
+        ids = f.get("event_ids", [])
+        if not ids:
+            problems.append("cites no events")
+        missing = [i for i in ids if not i in known]
+        if missing:
+            problems.append("Unknown event IDs: " + ", ".join(missing))
+
+        cited_ips = {known[i].ip for i in ids if i in known}
+        for ip in IP_PATTERN.findall(f.get("statement", "")):
+            if ip not in cited_ips:
+                problems.append(f"IP {ip} is not in the cited events")
+
+        f["verified"] = not problems
+        f["problems"] = problems
+    return result
