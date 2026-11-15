@@ -1,3 +1,10 @@
+"""Scores the manual accuracy review.
+
+    python3 score.py [review_sheet.csv]
+
+With no file it scores the newest review_*.csv in this folder.
+"""
+
 import csv
 import glob
 import os
@@ -16,6 +23,7 @@ print("Scoring", path)
 with open(path, encoding="utf-8") as f:
     rows = list(csv.DictReader(f))
 
+# only rows with a valid verdict get counted
 verdicts = [r["verdict"].strip().lower() for r in rows]
 done = [v for v in verdicts if v in ("correct", "partial", "incorrect")]
 if not done:

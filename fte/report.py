@@ -1,3 +1,10 @@
+"""Builds the HTML report as one standalone file with the CSS inside it.
+
+Log values can be controlled by an attacker, so every value goes through e()
+first. That way something like <script> in a log shows as text and doesn't
+run when the report is opened.
+"""
+
 import html
 from collections import Counter
 
@@ -20,14 +27,17 @@ tr:target td{background:#fff3b0}
 
 
 def e(value):
+    """Escapes a value for HTML. None becomes an empty string."""
     return html.escape("" if value is None else str(value), quote=True)
 
 
 def when(dt):
+    """Formats a time as YYYY-MM-DD HH:MM:SS."""
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def score_of(finding):
+    """Risk score as a number. Missing or bad scores count as 0."""
     try:
         return int(finding.get("risk_score", 0))
     except (TypeError, ValueError):
@@ -35,6 +45,8 @@ def score_of(finding):
 
 
 def finding_html(f):
+    """HTML for one finding with its tags, score and links to its events."""
+    # the model can return two types in one string, so show each as a tag
     tags = "".join(f'<span class="tag">{e(t.strip())}</span>' for t in str(f.get("anomaly_type", "")).split(","))
     links = ", ".join(f'<a href="#{e(i)}">{e(i)}</a>' for i in f.get("event_ids", []))
     status = "verified" if f["verified"] else "NOT verified: " + "; ".join(f["problems"])
@@ -44,16 +56,25 @@ def finding_html(f):
 
 
 def build_report(case, events, hashes, results):
+    """Returns the whole report as one HTML string.
+
+    case     name in the title
+    events   the sorted timeline
+    hashes   (file path, sha256) for each file, taken before reading it
+    results  AI results from analyze_all(), or None without --ai
+    """
     p = [f'<!doctype html><html lang="en"><head><meta charset="utf-8">'
          f'<title>Forensic Timeline: {e(case)}</title><style>{CSS}</style></head><body>']
     p.append(f"<h1>Forensic Timeline Report: {e(case)}</h1>")
     p.append("<p>All times are UTC.</p>")
 
+    # hashes taken before parsing
     p.append("<h2>Evidence files</h2><table><tr><th>File</th><th>SHA-256 (taken before parsing)</th></tr>")
     for path, digest in hashes:
         p.append(f"<tr><td>{e(path)}</td><td><code>{e(digest)}</code></td></tr>")
     p.append("</table>")
 
+    # scope numbers come straight from the logs, no AI
     failures = sum(1 for ev in events if ev.outcome == "failure")
     p.append("<h2>Scope</h2>")
     if events:
@@ -78,6 +99,7 @@ def build_report(case, events, hashes, results):
         p.append(f"<tr><td>{e(ip)}</td><td>{n}</td><td>{ip_fail[ip]}</td></tr>")
     p.append("</table>")
 
+    # AI summary and findings grouped by severity
     p.append("<h2>AI analysis</h2>")
     if results is None:
         p.append("<p>AI analysis was not run for this report.</p>")
@@ -98,6 +120,7 @@ def build_report(case, events, hashes, results):
             for f in group:
                 p.append(f'<div class="{css}">{finding_html(f)}</div>')
 
+    # full timeline, each row has an id so findings can link to it
     p.append(f"<h2>Timeline ({len(events)} events)</h2><table><tr><th>ID</th><th>Time (UTC)</th><th>Source</th>"
              "<th>User</th><th>IP</th><th>Action</th><th>Outcome</th><th>Target</th><th>Detail</th></tr>")
     for ev in events:

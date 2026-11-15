@@ -1,3 +1,5 @@
+"""Runs the AI on samples/ and prints the raw JSON, for testing the prompt."""
+
 import glob
 import json
 

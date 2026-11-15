@@ -1,3 +1,12 @@
+"""Forensic Timeline Engine, run this file.
+
+    python3 main.py [FILE ...] [--ai] [--open]
+
+With no files it reads everything in samples/. Each run writes files that
+share one UTC timestamp: timeline_*.csv, report_*.html and, with --ai,
+ai_*.json and review_*.csv.
+"""
+
 import csv
 import glob
 import json
@@ -15,11 +24,16 @@ from fte.timeline import build_timeline
 
 
 def next_filename(base="timeline", ext=".csv"):
+    """Output file name with the current UTC time in it.
+
+    A new name every run so old results never get overwritten.
+    """
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
     return f"{base}_{stamp}{ext}"
 
 
 def main():
+    # options start with --, everything else is a log file
     use_ai = "--ai" in sys.argv[1:]
     paths = [a for a in sys.argv[1:] if not a.startswith("--")]
     if not paths:
@@ -28,6 +42,7 @@ def main():
         print("usage: python3 main.py [FILE ...] [--ai] [--open]")
         sys.exit(1)
 
+    # 1. hash each file before reading it, then read it into events
     events = []
     hashes = []
     for path in paths:
@@ -37,8 +52,10 @@ def main():
         hashes.append((path, digest))
         events.extend(found)
 
+    # 2. merge everything into one UTC timeline with event IDs
     timeline = build_timeline(events)
 
+    # 3. save the timeline as a CSV
     out_name = next_filename()
     with open(out_name, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -49,6 +66,7 @@ def main():
 
     print(f"\n{len(timeline)} events written to {out_name}")
 
+    # 4. AI analysis with every finding checked (only with --ai)
     results = None
     if use_ai:
         results = analyze_all(timeline)
@@ -56,6 +74,7 @@ def main():
         with open(ai_name, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2)
 
+        # the review sheet is what you fill in for the accuracy check
         review_name = out_name.replace("timeline", "review", 1)
         write_review(review_name, results)
 
@@ -67,13 +86,14 @@ def main():
             if r["error"]:
                 print(f"AI chunk {r['first_id']} to {r['last_id']} failed: {r['error']}")
 
-
+    # 5. write the HTML report
     report_name = out_name.replace("timeline", "report", 1).replace(".csv", ".html")
     with open(report_name, "w", encoding="utf-8") as f:
         f.write(build_report("Cloud log investigation", timeline, hashes, results))
     print(f"Report saved to {report_name}")
     if "--open" in sys.argv[1:]:
         webbrowser.open("file://" + os.path.abspath(report_name))
+
 
 if __name__ == "__main__":
     main()
