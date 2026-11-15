@@ -4,3 +4,4 @@ timeline*.csv
 __pycache__/
 *.pyc
 .venv/
+ai_*.json

@@ -67,3 +67,28 @@ def check_findings(result, events):
         f["verified"] = not problems
         f["problems"] = problems
     return result
+
+
+def chunk_events(events, size=40, overlap=10):
+    chunks = []
+    start = 0
+    while start < len(events):
+        chunks.append(events[start:start + size])
+        if start + size >= len(events):
+            break
+        start += size - overlap
+    return chunks
+
+def analyze_all(events, size=40, overlap=10):
+    results = []
+    for n, chunk in enumerate(chunk_events(events, size, overlap), 1):
+        print(f"AI chunk {n}: {chunk[0].event_id} to {chunk[-1].event_id}")
+        try:
+            result = analyze(chunk)
+            check_findings(result, chunk)
+            result["error"] = None
+        except Exception as err:
+            result = {"summary": "", "findings": [], "error": str(err)}
+        result["first_id"] = chunk[0].event_id
+        result["last_id"] = chunk[-1].event_id
+    return results
