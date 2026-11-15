@@ -1,8 +1,14 @@
 import json
+
 import requests
-import config
+
 
 def ask_ollama(prompt, system=None):
+    try:
+        import config
+    except ImportError:
+        raise RuntimeError("config.py not found. Copy config_example.py to config.py and fill it in.")
+
     messages = []
     if system:
         messages.append({"role": "system", "content": system})
@@ -21,7 +27,7 @@ def ask_ollama(prompt, system=None):
         timeout=(10, 300),
     )
     if resp.status_code != 200:
-        raise RuntimeError(F"Ollama returned {resp.status_code}: {resp.text[:200]}")
+        raise RuntimeError(f"Ollama returned {resp.status_code}: {resp.text[:200]}")
 
     reply = ""
     for line in resp.iter_lines():

@@ -1,16 +1,21 @@
 import csv
+import glob
 import json
+import os
 from datetime import datetime, timezone
 import sys
+import webbrowser
 
+from fte.evaluate import write_review
 from fte.evidence import sha256_file
 from fte.readers import read_file
 from fte.report import build_report
-from fte.timeline import build_timeline
 from fte.summarize import analyze_all
+from fte.timeline import build_timeline
+
 
 def next_filename(base="timeline", ext=".csv"):
-    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H:%M:%S")
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
     return f"{base}_{stamp}{ext}"
 
 
@@ -18,7 +23,9 @@ def main():
     use_ai = "--ai" in sys.argv[1:]
     paths = [a for a in sys.argv[1:] if not a.startswith("--")]
     if not paths:
-        print("usage: python3 main.py FILE [FILE ...]")
+        paths = sorted(glob.glob("samples/*.json"))
+    if not paths:
+        print("usage: python3 main.py [FILE ...] [--ai] [--open]")
         sys.exit(1)
 
     events = []
@@ -41,25 +48,32 @@ def main():
                              e.action, e.outcome, e.target, e.detail])
 
     print(f"\n{len(timeline)} events written to {out_name}")
-    results = None
 
+    results = None
     if use_ai:
         results = analyze_all(timeline)
         ai_name = out_name.replace("timeline", "ai", 1).replace(".csv", ".json")
         with open(ai_name, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2)
 
+        review_name = out_name.replace("timeline", "review", 1)
+        write_review(review_name, results)
+
         findings = [f for r in results for f in r["findings"]]
         good = sum(1 for f in findings if f["verified"])
         print(f"\nAI: {len(findings)} findings, {good} verified. Saved to {ai_name}")
+        print(f"Review sheet: {review_name}")
         for r in results:
             if r["error"]:
                 print(f"AI chunk {r['first_id']} to {r['last_id']} failed: {r['error']}")
+
 
     report_name = out_name.replace("timeline", "report", 1).replace(".csv", ".html")
     with open(report_name, "w", encoding="utf-8") as f:
         f.write(build_report("Cloud log investigation", timeline, hashes, results))
     print(f"Report saved to {report_name}")
+    if "--open" in sys.argv[1:]:
+        webbrowser.open("file://" + os.path.abspath(report_name))
 
 if __name__ == "__main__":
     main()
