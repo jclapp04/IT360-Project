@@ -91,4 +91,5 @@ def analyze_all(events, size=40, overlap=10):
             result = {"summary": "", "findings": [], "error": str(err)}
         result["first_id"] = chunk[0].event_id
         result["last_id"] = chunk[-1].event_id
+        results.append(result)
     return results
