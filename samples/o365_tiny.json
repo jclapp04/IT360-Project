@@ -1,0 +1,4 @@
+[
+{"CreationTime":"2025-03-11T02:11:04","Operation":"UserLoginFailed","Workload":"AzureActiveDirectory","UserId":"test.user@corp.example","ClientIP":"203.0.113.45"},
+{"CreationTime":"2025-03-11T02:31:44","Operation":"New-InboxRule","Workload":"Exchange","UserId":"test.user@corp.example","ClientIP":"203.0.113.45:51822","ResultStatus":"True"}
+]
