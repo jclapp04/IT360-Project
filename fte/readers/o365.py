@@ -18,7 +18,7 @@ def read_o365(path):
 
         events.append(Event(
             ts=parse_ts(rec["CreationTime"]),
-            source="0365",
+            source="o365",
             action=rec["Operation"],
             user=rec.get("UserId"),
             ip=clean_ip(rec.get("ClientIP")),
